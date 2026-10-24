@@ -38,7 +38,17 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    private static final String PROD_FRONTEND_ORIGIN = "https://healthcare-interop-engine-frontend.vercel.app";
+    private static final List<String> DEFAULT_DEV_ORIGINS = List.of(
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost",
+            "http://localhost:80",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173"
+    );
+
+    @Value("${cors.allowed-origins:https://healthcare-interop-engine-frontend.vercel.app,http://localhost:3000,http://localhost:5173,http://localhost,http://localhost:80}")
     private String allowedOrigins;
 
     public SecurityConfig(
@@ -63,6 +73,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/api/mock-fhir/**").permitAll()
@@ -105,14 +116,35 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+        java.util.Set<String> origins = new java.util.LinkedHashSet<>();
 
-        configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
+        // Always guarantee production frontend origin and local dev origins
+        origins.add(PROD_FRONTEND_ORIGIN);
+        origins.addAll(DEFAULT_DEV_ORIGINS);
+
+        // Include any additional environment-configured origins, trimming whitespace and trailing slashes
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            Arrays.stream(allowedOrigins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
+                    .forEach(origins::add);
+        }
+
+        configuration.setAllowedOrigins(new java.util.ArrayList<>(origins));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers",
+                "Cache-Control",
+                "Pragma"
+        ));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
