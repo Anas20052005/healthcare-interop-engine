@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: false
+
+jwt:
+  secret: healthcare-interop-engine-secure-development-jwt-secret-key-32bytes-min
+  expiration: 86400000
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
+
+app:
+  retry:
+    enabled: true
+    max-attempts: 3
+    initial-interval-ms: 500
+    multiplier: 2.0
+    max-interval-ms: 5000
+    jitter: 0.1
+    poll-interval-ms: 10000

@@ -1,0 +1,72 @@
+.spinner-container {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--primary);
+}
+
+.spinner-block {
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.spinner-inline {
+  display: inline-flex;
+}
+
+.spinner-svg {
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-track {
+  opacity: 0.2;
+}
+
+.spinner-head {
+  opacity: 0.9;
+}
+
+.spinner-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Sizes */
+.spinner-sm .spinner-svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.spinner-md .spinner-svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.spinner-lg .spinner-svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
