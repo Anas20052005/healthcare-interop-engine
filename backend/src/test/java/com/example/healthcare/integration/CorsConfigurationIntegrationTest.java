@@ -23,9 +23,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CorsConfigurationIntegrationTest {
 
     private static final String PROD_ORIGIN = "https://healthcare-interop-engine-frontend.vercel.app";
+    private static final String VERCEL_PREVIEW_ORIGIN = "https://healthcare-interop-engine-frontend-git-main-anas.vercel.app";
+    private static final String VERCEL_BRANCH_ORIGIN = "https://healthcare-interop-engine-preview-deploy.vercel.app";
     private static final String DEV_ORIGIN_5173 = "http://localhost:5173";
     private static final String DEV_ORIGIN_3000 = "http://localhost:3000";
     private static final String DISALLOWED_ORIGIN = "https://unauthorized-domain.com";
+    private static final String UNRELATED_VERCEL_ORIGIN = "https://some-unrelated-app.vercel.app";
 
     @Autowired
     private MockMvc mockMvc;
@@ -90,6 +93,41 @@ class CorsConfigurationIntegrationTest {
     void preflightFromDisallowedOriginShouldBeRejected() throws Exception {
         mockMvc.perform(options("/api/auth/login")
                         .header(HttpHeaders.ORIGIN, DISALLOWED_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    @Test
+    @DisplayName("CORS Preflight OPTIONS from Vercel preview deployment URL should succeed with matching allow-origin")
+    void preflightFromVercelPreviewOriginShouldSucceed() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, VERCEL_PREVIEW_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_PREVIEW_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+    }
+
+    @Test
+    @DisplayName("CORS Preflight OPTIONS from Vercel project branch deployment URL should succeed with matching allow-origin")
+    void preflightFromVercelBranchOriginShouldSucceed() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, VERCEL_BRANCH_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_BRANCH_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+    }
+
+    @Test
+    @DisplayName("CORS Preflight OPTIONS from arbitrary unrelated Vercel URL should be rejected")
+    void preflightFromUnrelatedVercelAppShouldBeRejected() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, UNRELATED_VERCEL_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
                 .andExpect(status().isForbidden())
                 .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));

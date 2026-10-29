@@ -51,6 +51,9 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins:https://healthcare-interop-engine-frontend.vercel.app,http://localhost:3000,http://localhost:5173,http://localhost,http://localhost:80}")
     private String allowedOrigins;
 
+    @Value("${cors.allowed-origin-patterns:https://healthcare-interop-engine-frontend*.vercel.app,https://healthcare-interop-*.vercel.app}")
+    private String allowedOriginPatterns;
+
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             UserDetailsService userDetailsService,
@@ -116,11 +119,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        java.util.Set<String> origins = new java.util.LinkedHashSet<>();
+        java.util.Set<String> originPatterns = new java.util.LinkedHashSet<>();
 
         // Always guarantee production frontend origin and local dev origins
-        origins.add(PROD_FRONTEND_ORIGIN);
-        origins.addAll(DEFAULT_DEV_ORIGINS);
+        originPatterns.add(PROD_FRONTEND_ORIGIN);
+        originPatterns.addAll(DEFAULT_DEV_ORIGINS);
 
         // Include any additional environment-configured origins, trimming whitespace and trailing slashes
         if (allowedOrigins != null && !allowedOrigins.isBlank()) {
@@ -128,10 +131,23 @@ public class SecurityConfig {
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
-                    .forEach(origins::add);
+                    .forEach(originPatterns::add);
         }
 
-        configuration.setAllowedOrigins(new java.util.ArrayList<>(origins));
+        // Always permit legitimate Vercel production deployment URLs matching this project
+        originPatterns.add("https://healthcare-interop-engine-frontend*.vercel.app");
+        originPatterns.add("https://healthcare-interop-*.vercel.app");
+
+        // Include custom origin patterns from environment configuration
+        if (allowedOriginPatterns != null && !allowedOriginPatterns.isBlank()) {
+            Arrays.stream(allowedOriginPatterns.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
+                    .forEach(originPatterns::add);
+        }
+
+        configuration.setAllowedOriginPatterns(new java.util.ArrayList<>(originPatterns));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
                 "Authorization",

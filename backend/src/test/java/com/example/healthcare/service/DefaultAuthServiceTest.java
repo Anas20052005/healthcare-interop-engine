@@ -81,4 +81,26 @@ class DefaultAuthServiceTest {
 
         assertThrows(BadCredentialsException.class, () -> authService.login(request));
     }
+
+    @Test
+    @DisplayName("Should trim username before creating AuthenticationToken")
+    void shouldTrimUsernameBeforeAuthentication() {
+        LoginRequest request = new LoginRequest("  admin  ", "password123");
+        UserDetails userDetails = new User("admin", "password123", Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        com.example.healthcare.entity.User dbUser = new com.example.healthcare.entity.User("admin", "hash", "ADMIN", true);
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(dbUser));
+        when(jwtService.generateToken(eq("admin"), eq("ROLE_ADMIN"), any())).thenReturn("sample.jwt.token");
+
+        LoginResponse response = authService.login(request);
+
+        assertNotNull(response);
+        org.mockito.ArgumentCaptor<UsernamePasswordAuthenticationToken> tokenCaptor =
+                org.mockito.ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
+        verify(authenticationManager).authenticate(tokenCaptor.capture());
+        assertEquals("admin", tokenCaptor.getValue().getPrincipal());
+    }
 }

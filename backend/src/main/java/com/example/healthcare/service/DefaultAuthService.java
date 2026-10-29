@@ -48,7 +48,7 @@ public class DefaultAuthService implements AuthService {
         String username = request != null && request.getUsername() != null ? request.getUsername().trim() : "UNKNOWN";
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(username, request.getPassword())
             );
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();

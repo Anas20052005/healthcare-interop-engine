@@ -97,6 +97,33 @@ class AdminUserInitializerTest {
     }
 
     @Test
+    @DisplayName("Production: refuses to seed when custom password is shorter than 8 characters")
+    void shouldRefuseToSeedInProductionWhenPasswordIsTooShort() {
+        ReflectionTestUtils.setField(initializer, "adminPassword", "short");
+        when(userRepository.existsByUsername("admin")).thenReturn(false);
+        when(environment.acceptsProfiles(any(Profiles.class))).thenReturn(true);
+
+        initializer.run();
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Trims whitespace from admin username when seeding")
+    void shouldTrimUsernameWhenSeeding() {
+        ReflectionTestUtils.setField(initializer, "adminUsername", "  admin  ");
+        when(userRepository.existsByUsername("admin")).thenReturn(false);
+        when(environment.acceptsProfiles(any(Profiles.class))).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
+
+        initializer.run();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals("admin", userCaptor.getValue().getUsername());
+    }
+
+    @Test
     @DisplayName("Disabled seeding: skips seeding even if user does not exist")
     void shouldSkipWhenSeedingIsDisabled() {
         ReflectionTestUtils.setField(initializer, "seedEnabled", false);

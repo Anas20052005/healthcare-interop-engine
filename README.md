@@ -287,6 +287,7 @@ sequenceDiagram
 ### Role-Based Access Control (RBAC)
 - **`ROLE_ADMIN`:** Full administrative access, including registering new hospitals, creating and managing user accounts across hospital boundaries, and managing platform-wide destinations.
 - **`ROLE_USER`:** Operational access for hospital personnel (physicians, nurses, integration specialists). Restricted strictly to conversions, clinical data, destination tests, and deliveries associated with their assigned hospital tenant.
+- **Recruiter Demo Account (`demo_recruiter`):** A dedicated evaluation account granted standard `ROLE_USER` and assigned to an isolated sandbox tenant (`Recruiter Demo Hospital`, `DEMO-REC`). Evaluators and recruiters can safely log in, inspect metrics, submit synthetic HL7 messages, view FHIR output, and examine their own conversion history without accessing production administrator tools or other hospital tenants' clinical data. Password is configured securely via the `DEMO_PASSWORD` environment variable on Render and is never embedded in client bundles.
 
 ### Hospital Tenant Isolation Matrix
 
@@ -512,11 +513,17 @@ Copy-Item .env.example .env
 | `SEED_ADMIN_USER` | No | `true` | Enables initial administrator seeding on clean startup |
 | `ADMIN_USERNAME` | No | `admin` | Initial administrator username |
 | `ADMIN_PASSWORD` | Yes | *None (Must set)* | Initial administrator password (refuses `admin123` in production) |
+| `SEED_DEMO_USER` | No | `true` | Enables dedicated recruiter demo user seeding on startup |
+| `DEMO_USERNAME` | No | `demo_recruiter` | Sandbox demo recruiter username (never granted ADMIN) |
+| `DEMO_PASSWORD` | Yes (for Demo) | *None (Must set)* | Secure password for demo recruiter account; if unset, demo initialization is safely skipped |
+| `DEMO_HOSPITAL_NAME` | No | `Recruiter Demo Hospital` | Name of the dedicated multi-tenant sandbox hospital |
+| `DEMO_HOSPITAL_CODE` | No | `DEMO-REC` | Code of the dedicated multi-tenant sandbox hospital |
 | `HIBERNATE_DDL_AUTO` | No | `validate` | JPA schema management policy (`validate` recommended) |
 | `FLYWAY_ENABLED` | No | `true` | Controls automatic Flyway migration execution |
 | `BACKEND_PORT` | No | `8080` | Host port mapped to the backend service |
 | `FRONTEND_PORT` | No | `80` | Host port mapped to the frontend web server |
-| `CORS_ALLOWED_ORIGINS` | No | `http://localhost,http://localhost:80` | Comma-delimited list of permitted CORS origins |
+| `CORS_ALLOWED_ORIGINS` | No | `https://healthcare-interop-engine-frontend.vercel.app,http://localhost:3000,http://localhost:5173,http://localhost,http://localhost:80` | Comma-delimited list of permitted CORS origins |
+| `CORS_ALLOWED_ORIGIN_PATTERNS` | No | `https://healthcare-interop-engine-frontend*.vercel.app,https://healthcare-interop-*.vercel.app` | Comma-delimited origin patterns for Vercel preview/branch deployments |
 
 > **Security Requirement:** Never commit an actual `.env` file containing production credentials into Git.
 
